@@ -1,0 +1,470 @@
+openapi: 3.1.0
+info:
+  title: QT Consultancy HRMS API
+  version: 1.0.0
+  description: |
+    Recruitment, attendance, leave, resignation, targets, master data and policy for a
+    manpower staffing supplier. Exactly three roles exist: recruiter, manager, hr_admin.
+    Every list is scoped to the signed-in person: own rows for a recruiter, the reporting
+    line below for a manager, everything for the HR Admin.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+
+# Every failure returns { "error": { code, message, fields } }.
+#   401 unauthorized      missing, forged or expired access token
+#   403 forbidden         a role or ownership rule refused the action, or the login throttle tripped
+#   404 not_found         no row inside the caller's scope
+#   409 conflict          unique value, password reuse, or a record still in use
+#   422 validation_failed the body failed its schema; fields names each offending key
+#   400 bad_request       a server rule the schema cannot express (policy, notice period, mandatory reason)
+paths:
+  /api/health:
+    get:
+      summary: Database reachability probe
+      security: []
+      responses:
+        '200': { description: OK }
+
+  /api/auth/login:
+    post:
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [loginId, password]
+              properties:
+                loginId: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Access token plus an http-only refresh cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  actor: { $ref: '#/components/schemas/Actor' }
+        '401': { description: Invalid login ID or password }
+        '403': { description: Account locked }
+  /api/auth/refresh:
+    post:
+      summary: Exchange the refresh cookie for a new access token (single use, rotates)
+      security: []
+      responses:
+        '200': { description: New token and cookie }
+        '401': { description: Session expired or revoked }
+  /api/auth/logout:
+    post:
+      summary: Revoke the current refresh session
+      security: []
+      responses:
+        '204': { description: Signed out }
+  /api/auth/me:
+    get:
+      summary: The signed-in person, plus the HR Admin behind an impersonated session
+      responses:
+        '200':
+          description: Actor and acting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actor: { $ref: '#/components/schemas/Actor' }
+                  acting:
+                    oneOf:
+                      - type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          name: { type: string }
+                          roleLabel: { type: string }
+                      - type: 'null'
+  /api/auth/act-as:
+    post:
+      summary: HR Admin opens the workspace as another member. Scope, approvals and targets follow that person; the visit is audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [staffId]
+              properties:
+                staffId: { type: string, format: uuid }
+      responses:
+        '200': { description: Token and cookie for the target, plus the admin behind it }
+        '400': { description: That is already your own workspace }
+        '403': { description: Only the HR Admin may view another person's workspace }
+        '404': { description: No such staff member }
+        '409': { description: That person is no longer active }
+  /api/auth/act-as/exit:
+    post:
+      summary: Leave the borrowed workspace and return to the HR Admin's own session
+      responses:
+        '200': { description: Token and cookie restored to the admin }
+        '400': { description: You are not viewing someone else's workspace }
+  /api/auth/change-password:
+    post:
+      summary: Change your own password (length, letter, number, history and difference are enforced)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string }
+      responses:
+        '200': { description: Password updated }
+        '400': { description: The new password fails a policy rule }
+        '409': { description: The password was used recently }
+
+  /api/staff:
+    get:
+      summary: Directory the caller is allowed to see
+      responses:
+        '200': { description: Staff list }
+    post:
+      summary: Create an internal employee (HR Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, role]
+              properties:
+                name: { type: string }
+                designation: { type: string }
+                role: { type: string, enum: [recruiter, manager, hr_admin] }
+                managerId: { type: string, format: uuid, nullable: true }
+                location: { type: string }
+                hub: { type: string }
+                city: { type: string }
+                teamNote: { type: string }
+                mandate: { type: string }
+      responses:
+        '201': { description: Record saved }
+        '409': { description: That manager is below this person in the reporting line }
+  /api/staff/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      summary: One person plus their direct reports
+      responses:
+        '200': { description: Staff and reports }
+        '403': { description: Outside the caller scope }
+    patch:
+      summary: Update or deactivate a person (HR Admin). Deactivation disables the login, it never deletes history.
+      responses:
+        '200': { description: Record saved }
+
+  /api/staff/{id}/account:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Provision a login. The temporary password is returned once and is never readable again.
+      responses:
+        '201': { description: Account created }
+        '409': { description: Already provisioned, or the login ID is taken }
+  /api/staff/{id}/reset-password:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: HR Admin reset to a new temporary password, all sessions revoked, must change at next sign-in
+      responses:
+        '200': { description: Password reset }
+  /api/staff/{id}/lock:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Lock an account and sign it out everywhere
+      responses:
+        '200': { description: Account locked }
+  /api/staff/{id}/unlock:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Unlock an account and clear the failed attempt counter
+      responses:
+        '200': { description: Account unlocked }
+
+  /api/recruits:
+    get:
+      summary: Paginated, filtered recruit list inside the caller scope
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [Active, 'Not Active', active, not_active] } }
+        - { name: company, in: query, schema: { type: string } }
+        - { name: role, in: query, schema: { type: string } }
+        - { name: city, in: query, schema: { type: string } }
+        - { name: hub, in: query, schema: { type: string } }
+        - { name: owner, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, default: 25 } }
+        - { name: sort, in: query, schema: { type: string, enum: [doj, 'doj:asc', name, company, created] } }
+      responses:
+        '200': { description: Items, total, page, pageSize }
+    post:
+      summary: File a new recruit
+      responses:
+        '201': { description: Record saved }
+        '400': { description: Reason required when the status is Not Active }
+  /api/recruits/export.csv:
+    get:
+      summary: The same filters as the list, returned as CSV
+      responses:
+        '200': { description: text/csv attachment }
+  /api/recruits/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, description: Recruit code (RCT-1188) or uuid }
+    get:
+      summary: One recruit with document metadata
+      responses:
+        '200': { description: Recruit }
+        '404': { description: Not found in the caller scope }
+    patch:
+      summary: Update fields. Moving a recruit to another recruiter is HR Admin only.
+      responses:
+        '200': { description: Record saved }
+        '400': { description: Reason required }
+        '403': { description: Only the HR Admin can reassign the owner }
+  /api/recruits/{id}/deactivate:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Set Not Active. A reason is mandatory here and a database CHECK refuses an empty one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1 }
+      responses:
+        '200': { description: Record saved }
+        '400': { description: Reason required }
+  /api/recruits/{id}/activate:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Return a record to Active (owner, their manager or the HR Admin)
+      responses:
+        '200': { description: Record saved }
+  /api/recruits/{id}/documents/{kind}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - { name: kind, in: path, required: true, schema: { type: string, enum: [aadhaar, pan, resume, passbook] } }
+    post:
+      summary: Attach a file as the raw request body, with X-File-Name set. Max 5 MB, PDF/JPG/PNG/DOC/DOCX.
+      responses:
+        '201': { description: File attached }
+    get:
+      summary: Download the stored file
+      responses:
+        '200': { description: File bytes }
+    delete:
+      summary: Remove the stored file
+      responses:
+        '200': { description: File removed }
+
+  /api/attendance:
+    get:
+      summary: Days in a range for the caller scope
+      parameters:
+        - { name: staffId, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '200': { description: Attendance days }
+    post:
+      summary: Mark a day (self, or a report for a manager and the HR Admin). A late self-mark becomes pending.
+      responses:
+        '201': { description: Record saved }
+  /api/attendance/pending:
+    get:
+      summary: Late marks waiting for a decision
+      responses:
+        '200': { description: Pending queue }
+  /api/attendance/{id}/decision:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Accept or reject a late mark. Never your own record.
+      responses:
+        '200': { description: Marked accepted or rejected }
+        '403': { description: You cannot decide your own request }
+        '409': { description: Already decided }
+
+  /api/leave:
+    get:
+      summary: Leave list for the caller scope
+      responses:
+        '200': { description: Leave requests }
+    post:
+      summary: Apply for one date
+      responses:
+        '201': { description: Application submitted }
+  /api/leave/pending:
+    get:
+      summary: Applications waiting for the direct manager
+      responses:
+        '200': { description: Pending queue }
+  /api/leave/{id}/decision:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Accept or reject (direct manager, or the HR Admin as an override)
+      responses:
+        '200': { description: Application decided }
+        '403': { description: Not allowed for your role }
+        '409': { description: Already decided }
+
+  /api/resignations:
+    get:
+      summary: Filings for the caller scope
+      responses:
+        '200': { description: Filings }
+    post:
+      summary: File a resignation. Filing is never blocked by the dates - the approval step is where notice is checked.
+      responses:
+        '201': { description: Resignation filed }
+        '409': { description: A resignation is already on file }
+  /api/resignations/pending:
+    get:
+      summary: Filings waiting for a decision
+      responses:
+        '200': { description: Pending queue }
+  /api/resignations/{id}/decision:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: notice_accepted first, then accepted with a last day that satisfies the policy notice period
+      responses:
+        '200': { description: Resignation decided }
+        '400': { description: Accept the notice period first, or the last day gives too little notice }
+  /api/resignations/{id}/withdraw:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Withdraw your own filing while it is still open
+      responses:
+        '200': { description: Resignation withdrawn }
+        '403': { description: Only the person who filed it can withdraw it }
+
+  /api/targets:
+    get:
+      summary: Monthly target and achieved count per recruiter, with derived roll-ups
+      parameters:
+        - { name: month, in: query, schema: { type: string, example: '2026-10' } }
+      responses:
+        '200': { description: Month, items, self, team, rollup }
+    put:
+      summary: Assign a recruiter monthly target (HR Admin)
+      responses:
+        '200': { description: Target saved }
+        '404': { description: Targets are assigned to recruiters only }
+
+  /api/master:
+    get:
+      summary: Every picklist with its usage count
+      responses:
+        '200': { description: Items keyed by kind }
+    post:
+      summary: Add a value (HR Admin)
+      responses:
+        '201': { description: Record saved }
+  /api/master/active:
+    get:
+      summary: Active values only, for picklists in the portal
+      responses:
+        '200': { description: Values keyed by kind }
+  /api/master/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      summary: Rename a value and cascade the change to every record using it (HR Admin)
+      responses:
+        '200': { description: Record saved }
+    delete:
+      summary: Remove a value that no record uses (HR Admin). Values in use must be retired instead.
+      responses:
+        '200': { description: Value deleted }
+        '409': { description: Records still reference this value }
+  /api/master/{id}/status:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      summary: Retire or reactivate a value. Values in use are retired, never deleted.
+      responses:
+        '200': { description: Record saved }
+
+  /api/policy:
+    get:
+      summary: Lateness cut-off, notice days, default target and password rules
+      responses:
+        '200': { description: Policy }
+    put:
+      summary: Replace the policy row (HR Admin). Every later decision uses the new values.
+      responses:
+        '200': { description: Policy saved }
+
+  /api/audit:
+    get:
+      summary: Append-only audit trail (HR Admin)
+      parameters:
+        - { name: entity, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: actor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        '200': { description: 'Audit entries: id, occurredAt, actorName, action, entity, entityId, before, after, ip' }
+        '403': { description: Not allowed for your role }
+
+  /api/dashboard:
+    get:
+      summary: Month summary, KPIs, recruits by client company and recent joins for the caller scope
+      parameters:
+        - { name: month, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Dashboard payload }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Actor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        role: { type: string, enum: [recruiter, manager, hr_admin] }
+        roleLabel: { type: string, enum: [Recruiter, Manager, 'HR Admin'] }
+        employeeCode: { type: string }
+        loginId: { type: string }
+        mustChange: { type: boolean }

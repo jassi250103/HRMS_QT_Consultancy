@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Secrets — never commit real env files; set values in Railway Variables instead.
+# Only the .env.example template is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+server/certs/
+
+# Local runtime data & artifacts
+server/uploads/
+server/backups/
+server/.tunnel/
+*.dump
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

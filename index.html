@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QT Consultancy · HRMS</title>
+<script src="js/theme.js"></script>
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/components.css" />
+<link rel="stylesheet" href="styles/pages.css" />
+<link rel="stylesheet" href="styles/mobile.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div class="scrim" id="scrim" hidden></div>
+
+  <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+    <div class="sidebar__brand">
+      <img class="brand-logo" src="img/qt-consultancy.jpeg" alt="" width="34" height="34" />
+      <span class="brand-text">
+        <strong>QT Consultancy</strong>
+        <small>HRMS · Recruitment portal</small>
+      </span>
+    </div>
+
+    <nav class="nav" id="nav">
+      <p class="nav__label">Workspace</p>
+      <a class="nav__item" href="#/dashboard" data-route="dashboard">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav__item" href="#/recruits" data-route="recruits">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.6 5.5-4.6S14 16 14.6 19"/><path d="M16.5 6.4a3 3 0 0 1 0 5.2"/><path d="M18 14.6c2 .6 3.2 2.1 3.6 4.4"/></svg>
+        <span>My Recruits</span>
+        <span class="nav__count" id="navRecruitCount">0</span>
+      </a>
+      <a class="nav__item" href="#/my-calls" data-route="my-calls">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h2.5L11 8l-2 1.5a10 10 0 0 0 4.5 4.5L15 12l4.5 1.5V16c0 1.4-1.2 2.6-2.6 2.5A14 14 0 0 1 5.5 6.1C5.4 4.7 6.5 3.5 7 3.5Z"/></svg>
+        <span>My Calls</span>
+      </a>
+      <a class="nav__item" href="#/sheets" data-route="sheets" data-manager-only hidden>
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6Z"/><path d="M9 8h6M9 11.5h6M9 15h4"/></svg>
+        <span>Sheets</span>
+      </a>
+      <a class="nav__item" href="#/attendance" data-route="attendance">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="m9 14.5 2 2 4-4"/></svg>
+        <span>Attendance</span>
+      </a>
+      <a class="nav__item" href="#/face-enrollment" data-route="face-enrollment">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M16 3.5a4 4 0 0 1 0 8"/></svg>
+        <span>Face Enrollment</span>
+      </a>
+      <a class="nav__item" href="#/resignation" data-route="resignation">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h7.5L19 9v11.5H6Z"/><path d="M13 3.5V9h6"/><path d="M9 14h6"/><path d="M9 17.5h4"/></svg>
+        <span>Resignation</span>
+      </a>
+      <a class="nav__item" href="#/leave" data-route="leave">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="M12 13v4M10 15h4"/></svg>
+        <span>Leave</span>
+      </a>
+      <a class="nav__item" href="#/profile" data-route="profile">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.8-3.7 3.6-5.6 7-5.6s6.2 1.9 7 5.6"/></svg>
+        <span>Profile</span>
+      </a>
+      <a class="nav__item" href="#/account" data-route="account">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 10h17"/><path d="M7 15h4"/></svg>
+        <span>Account</span>
+      </a>
+
+      <p class="nav__label nav__label--gap" data-admin-only hidden>HR Admin</p>
+      <a class="nav__item" href="#/master-data" data-route="master-data" data-admin-only hidden>
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M21 19H3"/></svg>
+        <span>Master Data</span>
+      </a>
+      <a class="nav__item" href="#/staff" data-route="staff" data-admin-only hidden>
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.6 5.5-4.6S14 16 14.6 19"/><path d="M16.5 6.4a3 3 0 0 1 0 5.2"/><path d="M18 14.6c2 .6 3.2 2.1 3.6 4.4"/></svg>
+        <span>Internal Staff</span>
+      </a>
+      <a class="nav__item" href="#/targets" data-route="targets" data-admin-only hidden>
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6"/></svg>
+        <span>Targets</span>
+      </a>
+      <a class="nav__item" href="#/policy" data-route="policy" data-admin-only hidden>
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 5 6.5V12c0 4.2 2.9 7.3 7 8.5 4.1-1.2 7-4.3 7-8.5V6.5L12 4Z"/></svg>
+        <span>Policy</span>
+      </a>
+
+      <p class="nav__label nav__label--gap">Shortcuts</p>
+      <a class="nav__item" href="#/recruits/new" data-route="recruits-new">
+        <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Add Recruits</span>
+      </a>
+    </nav>
+
+    <div class="sidebar__foot">
+      <div class="cycle-card">
+        <p class="cycle-card__title"><span id="sideProgressMonth">Monthly</span> target</p>
+        <div class="progress progress--thin"><i id="sideProgress" style="width:0%"></i></div>
+        <p class="cycle-card__meta"><span id="sideProgressLabel">0 / 20</span> achieved</p>
+      </div>
+      <p class="sidebar__version">v2.4.1 — Recruitment module</p>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button class="icon-btn icon-btn--menu" id="menuToggle" aria-label="Open navigation" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+
+      <img class="topbar__logo" src="img/qt-consultancy.jpeg" alt="QT Consultancy" width="28" height="28" />
+
+      <div class="topbar__titles">
+        <h1 class="topbar__title" id="pageTitle">Dashboard</h1>
+        <p class="topbar__sub" id="pageSubtitle">Recruitment overview</p>
+      </div>
+
+      <div class="topbar__right">
+        <div class="topbar__user" id="userChip">
+          <span class="avatar" id="userAvatar">AR</span>
+          <span class="topbar__user-text">
+            <strong id="userName">—</strong>
+            <small id="userId">—</small>
+          </span>
+        </div>
+
+        <button class="icon-btn icon-btn--theme" id="themeToggle" type="button" aria-pressed="false" aria-label="Switch to night mode" title="Night mode">
+          <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a7.4 7.4 0 1 0 10.6 10.6Z"/></svg>
+          <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.7 5.7l1.4 1.4M16.9 16.9l1.4 1.4M18.3 5.7l-1.4 1.4M7.1 16.9l-1.4 1.4"/></svg>
+        </button>
+
+        <div class="popover-anchor">
+          <button class="icon-btn icon-btn--avatar" id="avatarBtn" aria-label="Account menu" aria-haspopup="true" aria-expanded="false">
+            <span class="avatar avatar--sm" id="avatarCircle">AR</span>
+          </button>
+          <div class="panel panel--menu" id="avatarPanel" hidden>
+            <p class="panel__identity"><strong id="menuName">—</strong><small id="menuRole">—</small></p>
+            <div class="panel__divider"></div>
+            <a class="panel__link" href="#/profile">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.8-3.7 3.6-5.6 7-5.6s6.2 1.9 7 5.6"/></svg>
+              View profile
+            </a>
+            <a class="panel__link" href="#/recruits">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.6 5.5-4.6S14 16 14.6 19"/></svg>
+              My recruits
+            </a>
+            <a class="panel__link" href="#/account">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 10h17"/><path d="M7 15h4"/></svg>
+              Account
+            </a>
+            <div class="panel__divider"></div>
+            <button class="panel__link panel__link--danger" id="logoutBtn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5H6v14h8"/><path d="M13 12h7"/><path d="M17.5 8.5 21 12l-3.5 3.5"/></svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="view" id="view" tabindex="-1"></main>
+
+    <footer class="app-foot">
+      <img class="brand-logo brand-logo--foot" src="img/qt-consultancy.jpeg" alt="" width="22" height="22" />
+      <span><strong>QT Consultancy</strong> · Trusted manpower supplier</span>
+      <span class="app-foot__sep">|</span>
+      <span>HRMS v2.4.1 — Recruitment module</span>
+      <span class="app-foot__sep">|</span>
+      <span>Access issues: HR Helpdesk, ext. 240</span>
+      <span class="app-foot__sep">|</span>
+      <span>© 2026 QT Consultancy</span>
+    </footer>
+  </div>
+</div>
+
+<div class="gate-layer" id="gate" hidden></div>
+
+<div class="modal-layer" id="modalLayer" hidden>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalBox">
+    <header class="modal__head">
+      <h2 class="modal__title" id="modalTitle">Title</h2>
+      <button class="icon-btn icon-btn--sm" id="modalClose" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <div class="modal__body" id="modalBody"></div>
+    <footer class="modal__foot" id="modalFoot"></footer>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Face recognition libraries -->
+<script src="js/vendor/face-api.js"></script>
+<script src="js/face-detector.js"></script>
+
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pagination.js"></script>
+<script src="js/datefield.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/attendance.js"></script>
+<script src="js/resignation.js"></script>
+<script src="js/leave.js"></script>
+<script src="js/recruits.js"></script>
+<script src="js/recruit-form.js"></script>
+<script src="js/recruit-detail.js"></script>
+<script src="js/vendor/xlsx.full.min.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/my-calls.js"></script>
+<script src="js/face-enrollment.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/staff-detail.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

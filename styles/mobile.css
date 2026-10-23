@@ -1,0 +1,266 @@
+/* ============ Mobile Optimizations ============ */
+
+/* Pagination Component */
+.pagination {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pagination__info {
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.pagination__ellipsis {
+  color: var(--text-3);
+  padding: 0 4px;
+}
+
+.pagination__size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.pagination__size-selector select {
+  min-width: 70px;
+}
+
+/* Face Enrollment & Attendance - Camera UI */
+@media (max-width: 768px) {
+  /* Modal adjustments */
+  .modal__body {
+    padding: 16px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+
+  /* Camera video sizing */
+  #faceVideo,
+  #attVideo {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    border-radius: 8px;
+  }
+
+  /* Button rows - stack on mobile */
+  .btn-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-row > * {
+    width: 100%;
+  }
+
+  /* Buttons full width */
+  .btn {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .btn--sm {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* Alert boxes */
+  .alert {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .alert__body {
+    line-height: 1.5;
+  }
+
+  /* Form fields */
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field__label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .field__input,
+  .field__select {
+    padding: 10px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Modal title */
+  .modal__title {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  /* Text content */
+  p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Lists in instructions */
+  ul, ol {
+    padding-left: 20px;
+    margin: 12px 0;
+  }
+
+  li {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  /* Camera host container */
+  #cameraHost,
+  #faceCaptureHost {
+    margin: 16px 0;
+  }
+
+  /* Canvas elements */
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Toast notifications */
+  .toast-stack {
+    max-width: calc(100vw - 16px);
+    right: 8px;
+    left: 8px;
+  }
+
+  .toast {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+  
+  /* Pagination on mobile */
+  .pagination {
+    padding: 12px;
+  }
+  
+  .pagination__controls {
+    gap: 2px;
+  }
+  
+  .pagination__controls .btn--sm {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+  
+  .pagination__info {
+    font-size: 12px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  body {
+    font-size: 12px;
+  }
+
+  .modal__body {
+    padding: 12px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  h1, .modal__title {
+    font-size: 16px;
+  }
+
+  h2 {
+    font-size: 15px;
+  }
+
+  h3 {
+    font-size: 14px;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal__body {
+    max-height: calc(100vh - 60px);
+  }
+
+  #faceVideo,
+  #attVideo {
+    max-height: 40vh;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  button,
+  .btn {
+    min-height: 44px; /* Apple HIG recommendation */
+  }
+
+  /* Remove hover effects that don't work on touch */
+  button:hover,
+  .btn:hover {
+    transform: none;
+  }
+
+  /* Better focus indicators for keyboard navigation */
+  button:focus-visible,
+  .btn:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  video {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode support (if system supports it) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* Print styles */
+@media print {
+  .modal,
+  .topbar,
+  .sidebar,
+  button,
+  video {
+    display: none !important;
+  }
+}
