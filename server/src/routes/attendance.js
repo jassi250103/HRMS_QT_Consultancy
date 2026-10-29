@@ -39,6 +39,8 @@ const shape = (row) => ({
   longitude: row.marked_longitude,
   distanceMeters: row.distance_meters,
   faceVerified: row.face_verified,
+  manualOverride: row.manual_override,
+  overrideReason: row.override_reason,
 });
 
 /* A late login is a request, not a record: it only becomes attendance once the manager accepts it. */
@@ -114,6 +116,20 @@ router.post('/', handler(async (req, res) => {
   const markingForOther = staffId !== req.actor.id;
   const decision = late && markingForOther ? 'n/a' : late ? 'pending' : 'n/a';
 
+  /* Backup path: a manager/admin marking for a report skips face + geofence, but a Present
+     mark must carry a reason so the override is auditable. Self-marks never set this flag. */
+  let manualOverride = false;
+  let overrideReason = null;
+  if (markingForOther) {
+    if (input.status === 'present' && !input.overrideReason) {
+      throw ApiError.badRequest('An override reason is required when marking someone Present without face verification.');
+    }
+    if (input.overrideReason) {
+      manualOverride = true;
+      overrideReason = input.overrideReason;
+    }
+  }
+
   /* Geofence and face verification: MANDATORY for all self attendance marking */
   let distanceMeters = null;
   let faceVerified = false;
@@ -163,17 +179,19 @@ router.post('/', handler(async (req, res) => {
 
   const row = await one(
     `INSERT INTO attendance (staff_id, work_date, status, login_time, late, marked_by, decision, remarks,
-       marked_latitude, marked_longitude, distance_meters, face_verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       marked_latitude, marked_longitude, distance_meters, face_verified, manual_override, override_reason)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      ON CONFLICT (staff_id, work_date) DO UPDATE
        SET status = EXCLUDED.status, login_time = EXCLUDED.login_time, late = EXCLUDED.late,
            marked_by = EXCLUDED.marked_by, decision = EXCLUDED.decision, remarks = EXCLUDED.remarks,
            marked_latitude = EXCLUDED.marked_latitude, marked_longitude = EXCLUDED.marked_longitude,
            distance_meters = EXCLUDED.distance_meters, face_verified = EXCLUDED.face_verified,
+           manual_override = EXCLUDED.manual_override, override_reason = EXCLUDED.override_reason,
            decided_by = NULL, decided_at = NULL
      RETURNING *`,
     [staffId, input.workDate, input.status, input.loginTime || null, late, req.actor.id, decision,
-     input.remarks || '', input.latitude || null, input.longitude || null, distanceMeters, faceVerified],
+     input.remarks || '', input.latitude || null, input.longitude || null, distanceMeters, faceVerified,
+     manualOverride, overrideReason],
   );
   await writeAudit(query, { actor: req.actor, action: 'attendance_marked', entity: 'attendance', entityId: row.id, after: row });
 

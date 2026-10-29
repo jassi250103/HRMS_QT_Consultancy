@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { before, test } from 'node:test';
 import request from 'supertest';
-import { api, app, loginAs, useDatabase } from './helpers.js';
+import { api, app, guardFields, loginAs, prepareAttendanceGuards, useDatabase } from './helpers.js';
 
 useDatabase();
+before(prepareAttendanceGuards);
 
 const month = () => new Date().toISOString().slice(0, 7);
 
@@ -99,11 +100,12 @@ test('policy drives the lateness threshold used by attendance', async () => {
   assert.equal(moved.status, 200);
 
   const ananya = await loginAs('ananya.rao');
-  const late = await api(ananya).post('/api/attendance').send({ workDate: '2026-11-19', status: 'present', loginTime: '10:05' });
+  const late = await api(ananya).post('/api/attendance').send({ workDate: '2026-11-19', status: 'present', loginTime: '10:05', ...guardFields() });
+  assert.equal(late.status, 201, JSON.stringify(late.body.error ?? ''));
   assert.equal(late.body.item.late, false, '10:05 is on time once the cut-off moves to 10:30');
 
   await api(meera).put('/api/policy').send({ ...moved.body.item, lateAfter: '09:30' });
-  const back = await api(ananya).post('/api/attendance').send({ workDate: '2026-11-19', status: 'present', loginTime: '10:05' });
+  const back = await api(ananya).post('/api/attendance').send({ workDate: '2026-11-19', status: 'present', loginTime: '10:05', ...guardFields() });
   assert.equal(back.body.item.late, true);
 });
 
@@ -178,7 +180,7 @@ test('a manager cannot provision accounts or read the audit trail', async () => 
 
 test('every decision is written to the audit trail with the actor', async () => {
   const meera = await loginAs('meera.krishnan');
-  const created = await api(meera).post('/api/recruits').send({ name: 'Audit Trail Candidate', doj: '2026-10-01' });
+  const created = await api(meera).post('/api/recruits').send({ code: 'AUDIT-001', name: 'Audit Trail Candidate', doj: '2026-10-01' });
   const deactivated = await api(meera).post(`/api/recruits/${created.body.item.uuid}/deactivate`).send({ reason: 'Not reachable' });
   assert.equal(deactivated.status, 200);
 

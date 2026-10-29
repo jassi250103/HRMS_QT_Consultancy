@@ -39,18 +39,18 @@ test('one recruiter cannot read another recruit record', async () => {
 test('creating a recruit stores it against the signed-in recruiter', async () => {
   const ananya = await loginAs('ananya.rao');
   const res = await api(ananya).post('/api/recruits').send({
-    name: 'Test Candidate One', company: 'Aster Logistics LLP', role: 'Warehouse Associate',
+    code: 'TEST-1000', name: 'Test Candidate One', company: 'Aster Logistics LLP', role: 'Warehouse Associate',
     city: 'Bengaluru', doj: new Date().toISOString().slice(0, 10),
   });
   assert.equal(res.status, 201);
-  assert.match(res.body.item.code, /^RCT-\d+$/);
+  assert.equal(res.body.item.code, 'TEST-1000', 'the company-assigned Recruiter ID is kept as the identifier');
   assert.equal(res.body.item.ownerName, 'Ananya Rao');
   assert.equal(res.body.item.status, 'Active');
 });
 
 test('deactivation without a reason is refused at every level', async () => {
   const ananya = await loginAs('ananya.rao');
-  const created = await api(ananya).post('/api/recruits').send({ name: 'Reasonless Candidate', doj: '2026-10-01' });
+  const created = await api(ananya).post('/api/recruits').send({ code: 'TEST-1001', name: 'Reasonless Candidate', doj: '2026-10-01' });
   const id = created.body.item.uuid;
 
   const patch = await api(ananya).patch(`/api/recruits/${id}`).send({ status: 'not_active' });
@@ -70,7 +70,7 @@ test('deactivation without a reason is refused at every level', async () => {
 
 test('a not-active record keeps its reason even after reactivation', async () => {
   const ananya = await loginAs('ananya.rao');
-  const created = await api(ananya).post('/api/recruits').send({ name: 'Reactivated Candidate', doj: '2026-10-01' });
+  const created = await api(ananya).post('/api/recruits').send({ code: 'TEST-1002', name: 'Reactivated Candidate', doj: '2026-10-01' });
   await api(ananya).post(`/api/recruits/${created.body.item.uuid}/deactivate`).send({ reason: 'Document mismatch' });
   const back = await api(ananya).post(`/api/recruits/${created.body.item.uuid}/activate`).send({});
   assert.equal(back.status, 200);
@@ -81,7 +81,7 @@ test('a not-active record keeps its reason even after reactivation', async () =>
 test('another recruiter cannot deactivate a record that is not theirs', async () => {
   const ananya = await loginAs('ananya.rao');
   const neha = await loginAs('neha.kulkarni');
-  const created = await api(ananya).post('/api/recruits').send({ name: 'Protected Candidate', doj: '2026-10-01' });
+  const created = await api(ananya).post('/api/recruits').send({ code: 'TEST-1003', name: 'Protected Candidate', doj: '2026-10-01' });
   const res = await api(neha).post(`/api/recruits/${created.body.item.uuid}/deactivate`).send({ reason: 'Document mismatch' });
   assert.equal(res.status, 404, 'the record is not visible outside its owner scope');
 });
@@ -105,7 +105,7 @@ test('filters, paging and sorting run on the server', async () => {
 test('only the HR Admin can move a recruit to another recruiter', async () => {
   const ananya = await loginAs('ananya.rao');
   const neha = await loginAs('neha.kulkarni');
-  const created = await api(ananya).post('/api/recruits').send({ name: 'Handover Candidate', doj: '2026-10-01' });
+  const created = await api(ananya).post('/api/recruits').send({ code: 'TEST-1004', name: 'Handover Candidate', doj: '2026-10-01' });
 
   const meera = await loginAs('meera.krishnan');
   const directory = await api(meera).get('/api/staff');
@@ -128,7 +128,7 @@ test('only the HR Admin can move a recruit to another recruiter', async () => {
 
 test('documents are optional on a recruit record', async () => {
   const ananya = await loginAs('ananya.rao');
-  const res = await api(ananya).post('/api/recruits').send({ name: 'No Papers Candidate' });
+  const res = await api(ananya).post('/api/recruits').send({ code: 'TEST-1005', name: 'No Papers Candidate' });
   assert.equal(res.status, 201);
   const detail = await api(ananya).get(`/api/recruits/${res.body.item.uuid}`);
   assert.deepEqual(detail.body.item.documents, {});

@@ -59,9 +59,15 @@ window.App = window.App || {};
 
   /* A manager decides on the day; anyone else only reads who holds the decision. */
   function decisionCell(day) {
-    if (day.status === 'Not marked' && !day.approval) return '<span class="cell-muted">Not marked</span>';
+    /* Backup path: unmarked or auto-filled-Absent days of a report can be marked manually. */
+    const canMark = S.canDecide(day.ownerId) && day.approval !== 'Pending'
+      && (day.status === 'Not marked' || day.status === 'Absent');
+    const markBtn = canMark
+      ? `<div class="btn-row" style="margin-top:4px"><button class="btn btn--sm" type="button" data-mark-day="${U.esc(day.ownerId)}|${day.date}">Mark</button></div>`
+      : '';
+    if (day.status === 'Not marked' && !day.approval) return `<span class="cell-muted">Not marked</span>${markBtn}`;
     if (day.approval !== 'Pending') {
-      return `<span class="cell-muted">${approvalBadge(day.approval)}${day.decidedBy ? `<span class="cell-sub">${U.esc(day.decidedBy)}</span>` : ''}</span>`;
+      return `<span class="cell-muted">${approvalBadge(day.approval)}${day.decidedBy ? `<span class="cell-sub">${U.esc(day.decidedBy)}</span>` : ''}</span>${day.status === 'Absent' ? markBtn : ''}`;
     }
     if (!S.canDecide(day.ownerId)) {
       return `<span class="cell-muted">With ${U.esc(S.approverName(day.ownerId))}</span>`;
@@ -72,13 +78,18 @@ window.App = window.App || {};
     </div>`;
   }
 
+  function manualBadge(day) {
+    if (!day.manualOverride) return '';
+    return `<span class="badge badge--neutral" style="margin-left:6px"${day.overrideReason ? ` title="Manual override: ${U.esc(day.overrideReason)}"` : ''}><i></i>Manual</span>`;
+  }
+
   function rowHTML(day, lateAfter, withOwner) {
     const c = dateCell(day, lateAfter);
     const isToday = day.date === U.todayKey();
     return `<tr${isToday ? ' class="att-row--today"' : ''}>
       <td>${c.main}<span class="cell-sub${isToday ? ' cell-sub--now' : ''}">${c.sub}</span></td>
       ${withOwner ? `<td>${U.esc(S.ownerName(day.ownerId))}</td>` : ''}
-      <td>${statusBadge(day.status)}</td>
+      <td>${statusBadge(day.status)}${manualBadge(day)}</td>
       <td class="cell-num">${c.time}</td>
       <td>${decisionCell(day)}</td>
     </tr>`;
@@ -134,6 +145,7 @@ window.App = window.App || {};
         <p>${intro}</p>
       </div>
       <div class="page-head__actions">
+        ${manager ? `<button class="btn" type="button" id="markForBtn">${icon('check')} Mark for recruiter</button>` : ''}
         <button class="btn btn--primary" type="button" id="markAttBtn">${icon('check')} Mark Attendance</button>
       </div>
     </div>
@@ -281,13 +293,14 @@ window.App = window.App || {};
           <button class="btn btn--sm" type="button" id="startAttCameraBtn">${icon('camera')} Start Camera</button>
           <button class="btn btn--sm" type="button" id="attCaptureBtn" style="display:none">${icon('image')} Capture Now</button>
         </div>
-        <span class="field__hint">Your face will be verified against your enrolled template. This prevents proxy attendance.</span>
+        <span class="field__hint">Your face will be verified against your enrolled template. This prevents proxy attendance. Camera or verification not working? Your manager or HR Admin can mark this day for you.</span>
         <span class="field__error"></span>
       </div>
       ` : `
       <div class="alert alert--danger" style="margin:12px 0">
         <div class="alert__body">
-          <strong>🔒 Face Enrollment Required:</strong> You must enroll your face before marking attendance. <a href="#/face-enrollment" style="color:var(--brand);text-decoration:underline;font-weight:bold">Enroll Now →</a>
+          <strong>🔒 Face Enrollment Required:</strong> You must enroll your face before marking attendance. <a href="#/face-enrollment" style="color:var(--brand);text-decoration:underline;font-weight:bold">Enroll Now →</a><br>
+          Can't enroll right now? Ask your manager or HR Admin to mark your attendance.
         </div>
       </div>
       `}
@@ -393,7 +406,10 @@ window.App = window.App || {};
                 + (pending ? `Waiting on ${U.esc(S.approverName())}.` : 'No approval needed.'));
               onSaved();
             }).catch((error) => {
-              A.ui.toast('error', 'Mark not saved', error.message);
+              const hint = /face|location|geofence|camera/i.test(error.message)
+                ? ' If verification keeps failing on this device, ask your manager or HR Admin to mark this day for you.'
+                : '';
+              A.ui.toast('error', 'Mark not saved', error.message + hint);
             });
           },
         },
@@ -470,7 +486,7 @@ window.App = window.App || {};
     try {
       const loaded = await A.faceDetector.loadModels();
       if (!loaded) {
-        A.ui.toast('error', 'Face detection not available', 'Please refresh the page.');
+        A.ui.toast('error', 'Face detection not available', 'Refresh the page to retry. If it still fails, ask your manager or HR Admin to mark your attendance.');
         return;
       }
 
@@ -492,7 +508,7 @@ window.App = window.App || {};
       });
       attLive.start();
     } catch (error) {
-      A.ui.toast('error', 'Camera access denied', 'Please allow camera access for face verification.');
+      A.ui.toast('error', 'Camera access denied', 'Allow camera access to verify your face, or ask your manager / HR Admin to mark your attendance.');
     }
   }
 
@@ -527,6 +543,134 @@ window.App = window.App || {};
       videoStream = null;
     }
     if (A.faceDetector) A.faceDetector.stopWebcam();
+  }
+
+  /* ---------- Backup path: manager/admin marks without face or geofence ---------- */
+  const OVERRIDE_REASONS = [
+    'Face verification failing',
+    'Camera or device not working',
+    'Face not enrolled',
+    'Location / GPS issue',
+    'Other (type reason)',
+  ];
+
+  async function openOverrideModal(preStaffId, preDate, onSaved) {
+    await S.reload(['staff', 'policy']).catch(() => {});
+    const reports = S.teamMembers();
+    const lateAfter = S.attendanceStats(S.attendanceDays()).lateAfter;
+
+    const body = `<p>Use this only when the person cannot mark their own attendance (face recognition or location unavailable). The reason is written to the audit trail.</p>
+      <div class="field" style="margin-top:14px">
+        <label class="field__label" for="ovStaff">Recruiter <span class="req">*</span></label>
+        <select class="control" id="ovStaff" data-autofocus>
+          <option value="">Select a recruiter…</option>
+          ${reports.map((m) => `<option value="${m.id}"${m.id === preStaffId ? ' selected' : ''}>${U.esc(m.name)}</option>`).join('')}
+        </select>
+        <span class="field__error"></span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="ovDate">Date <span class="req">*</span></label>
+        <input class="control" id="ovDate" type="date" value="${preDate || U.todayKey()}" max="${U.todayKey()}" />
+        <span class="field__error"></span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="ovStatus">Status <span class="req">*</span></label>
+        <select class="control" id="ovStatus">
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="leave">Leave</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="ovLogin">Time of Login</label>
+        <input class="control" id="ovLogin" type="time" value="09:15" min="06:00" max="23:59" />
+        <span class="field__hint">Applies to Present only. Check-ins after ${lateAfter} are flagged as late.</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="ovReason">Override reason <span class="req" id="ovReasonReq" style="display:none">*</span></label>
+        <select class="control" id="ovReason">
+          <option value="">Not required</option>
+          ${OVERRIDE_REASONS.map((r) => `<option value="${U.esc(r)}">${U.esc(r)}</option>`).join('')}
+        </select>
+        <div class="field" id="ovReasonOtherWrap" style="display:none;margin:8px 0 0">
+          <input class="control" id="ovReasonOther" type="text" maxlength="240" placeholder="Type the override reason" />
+          <span class="field__error"></span>
+        </div>
+        <span class="field__hint">Required when marking Present for someone else.</span>
+      </div>`;
+
+    A.ui.modal({
+      title: 'Mark attendance for a recruiter',
+      body,
+      compact: false,
+      actions: [
+        { label: 'Cancel', onClick: (m) => m.close() },
+        {
+          label: 'Save mark',
+          variant: 'primary',
+          onClick: (m) => {
+            const staffSel = U.by('ovStaff');
+            const dateField = U.by('ovDate');
+            const status = U.by('ovStatus').value;
+            const reason = U.by('ovReason').value;
+            const staffField = staffSel.closest('.field');
+            const dateFieldWrap = dateField.closest('.field');
+            staffField.classList.remove('has-error');
+            dateFieldWrap.classList.remove('has-error');
+
+            if (!staffSel.value) {
+              A.ui.error(staffField, 'Choose a recruiter');
+              return;
+            }
+            if (!dateField.value) {
+              A.ui.error(dateFieldWrap, 'Choose a date');
+              return;
+            }
+            let overrideReason = reason;
+            if (reason === 'Other (type reason)') {
+              const typed = U.by('ovReasonOther').value.trim();
+              if (!typed) {
+                A.ui.error(U.by('ovReasonOther').closest('.field'), 'Type the override reason');
+                return;
+              }
+              overrideReason = typed;
+            }
+            if (status === 'present' && !overrideReason) {
+              A.ui.error(U.by('ovReason').closest('.field'), 'A reason is required to mark Present without face verification');
+              return;
+            }
+
+            const payload = {
+              workDate: dateField.value,
+              status,
+              loginTime: status === 'present' ? U.by('ovLogin').value : null,
+              staffId: staffSel.value,
+              overrideReason: overrideReason || undefined,
+            };
+
+            S.markAttendance(payload).then(() => {
+              m.close();
+              A.ui.toast('success', 'Attendance saved',
+                `${U.esc(S.ownerName(payload.staffId))} · ${U.fmtDate(dateField.value)} marked ${status}.`);
+              onSaved();
+            }).catch((error) => {
+              A.ui.toast('error', 'Mark not saved', error.message);
+            });
+          },
+        },
+      ],
+      onMount: () => {
+        const sync = () => {
+          const present = U.by('ovStatus').value === 'present';
+          U.by('ovLogin').disabled = !present;
+          U.by('ovReasonReq').style.display = present ? '' : 'none';
+          U.by('ovReasonOtherWrap').style.display = U.by('ovReason').value === 'Other (type reason)' ? '' : 'none';
+        };
+        U.by('ovStatus').addEventListener('change', sync);
+        U.by('ovReason').addEventListener('change', sync);
+        sync();
+      },
+    });
   }
 
   /* ---------- Approval ---------- */
@@ -585,6 +729,10 @@ window.App = window.App || {};
       tab = 'my';
       openMarkModal(loadAndRender);
     });
+    const markForBtn = U.by('markForBtn');
+    if (markForBtn) {
+      markForBtn.addEventListener('click', () => openOverrideModal(null, U.todayKey(), loadAndRender));
+    }
     
     // Bind page size selector
     const pageSizeSelect = U.by('pageSizeSelect');
@@ -612,6 +760,12 @@ window.App = window.App || {};
         tab = tabBtn.dataset.tab;
         currentPage = 1;
         loadAndRender();
+        return;
+      }
+      const mark = ev.target.closest('[data-mark-day]');
+      if (mark) {
+        const parts = mark.dataset.markDay.split('|');
+        openOverrideModal(parts[0], parts[1], loadAndRender);
         return;
       }
       const accept = ev.target.closest('[data-accept-day]');

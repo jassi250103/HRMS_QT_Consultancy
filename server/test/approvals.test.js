@@ -1,15 +1,19 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { api, loginAs, useDatabase } from './helpers.js';
+import { before, test } from 'node:test';
+import { api, guardFields, loginAs, prepareAttendanceGuards, useDatabase } from './helpers.js';
 
 useDatabase();
+before(prepareAttendanceGuards);
 
 const today = () => new Date().toISOString().slice(0, 10);
 const inDays = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
+/* Self-marks must carry geofence coordinates and a matching face descriptor. */
+const selfMark = (payload) => ({ ...payload, ...guardFields() });
+
 test('a late self-marked attendance day waits for the manager instead of being accepted', async () => {
   const ananya = await loginAs('ananya.rao');
-  const res = await api(ananya).post('/api/attendance').send({ workDate: inDays(1), status: 'present', loginTime: '10:12' });
+  const res = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(1), status: 'present', loginTime: '10:12' }));
   assert.equal(res.status, 201);
   assert.equal(res.body.item.late, true);
   assert.equal(res.body.item.decision, 'pending');
@@ -17,7 +21,7 @@ test('a late self-marked attendance day waits for the manager instead of being a
 
 test('a mark before the policy cut-off needs no approval', async () => {
   const ananya = await loginAs('ananya.rao');
-  const res = await api(ananya).post('/api/attendance').send({ workDate: inDays(2), status: 'present', loginTime: '09:05' });
+  const res = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(2), status: 'present', loginTime: '09:05' }));
   assert.equal(res.body.item.late, false);
   assert.equal(res.body.item.decision, 'n/a');
 });
@@ -26,14 +30,14 @@ test('a manager marks a report and the record is not pending', async () => {
   const sanjay = await loginAs('sanjay.iyer');
   const directory = await api(sanjay).get('/api/staff');
   const report = directory.body.items.find((row) => row.loginId === 'vikram.desai');
-  const res = await api(sanjay).post('/api/attendance').send({ staffId: report.id, workDate: inDays(3), status: 'present', loginTime: '10:40' });
+  const res = await api(sanjay).post('/api/attendance').send({ staffId: report.id, workDate: inDays(3), status: 'present', loginTime: '10:40', overrideReason: 'Face verification failing' });
   assert.equal(res.status, 201);
   assert.equal(res.body.item.decision, 'n/a', 'a manager marking is final, not a request');
 });
 
 test('a recruiter cannot decide their own pending mark', async () => {
   const ananya = await loginAs('ananya.rao');
-  const marked = await api(ananya).post('/api/attendance').send({ workDate: inDays(4), status: 'present', loginTime: '10:55' });
+  const marked = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(4), status: 'present', loginTime: '10:55' }));
   const res = await api(ananya).post(`/api/attendance/${marked.body.item.id}/decision`).send({ decision: 'accepted' });
   assert.equal(res.status, 403);
   assert.equal(res.body.error.message, 'You cannot decide your own request');
@@ -41,7 +45,7 @@ test('a recruiter cannot decide their own pending mark', async () => {
 
 test('the direct manager accepts a late mark and signs the decision', async () => {
   const ananya = await loginAs('ananya.rao');
-  const marked = await api(ananya).post('/api/attendance').send({ workDate: inDays(5), status: 'present', loginTime: '11:20' });
+  const marked = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(5), status: 'present', loginTime: '11:20' }));
   const sanjay = await loginAs('sanjay.iyer');
   const res = await api(sanjay).post(`/api/attendance/${marked.body.item.id}/decision`).send({ decision: 'accepted', remarks: 'Client site delay' });
   assert.equal(res.status, 200);
@@ -54,7 +58,7 @@ test('the direct manager accepts a late mark and signs the decision', async () =
 
 test('a rejected mark withdraws the claim and leaves the day absent', async () => {
   const ananya = await loginAs('ananya.rao');
-  const marked = await api(ananya).post('/api/attendance').send({ workDate: inDays(10), status: 'present', loginTime: '11:05' });
+  const marked = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(10), status: 'present', loginTime: '11:05' }));
   const sanjay = await loginAs('sanjay.iyer');
   const res = await api(sanjay).post(`/api/attendance/${marked.body.item.id}/decision`).send({ decision: 'rejected' });
   assert.equal(res.status, 200);
@@ -62,14 +66,14 @@ test('a rejected mark withdraws the claim and leaves the day absent', async () =
   assert.equal(res.body.item.loginTime, null);
   assert.equal(res.body.item.late, false);
 
-  const again = await api(ananya).post('/api/attendance').send({ workDate: inDays(10), status: 'present', loginTime: '09:10' });
+  const again = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(10), status: 'present', loginTime: '09:10' }));
   assert.equal(again.status, 201);
   assert.equal(again.body.item.decision, 'n/a', 'a corrected mark is no longer a request');
 });
 
 test('a peer recruiter cannot decide another recruiter day', async () => {
   const ananya = await loginAs('ananya.rao');
-  const marked = await api(ananya).post('/api/attendance').send({ workDate: inDays(6), status: 'present', loginTime: '11:40' });
+  const marked = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(6), status: 'present', loginTime: '11:40' }));
   const vikram = await loginAs('vikram.desai');
   const res = await api(vikram).post(`/api/attendance/${marked.body.item.id}/decision`).send({ decision: 'accepted' });
   assert.equal(res.status, 403);
@@ -77,7 +81,7 @@ test('a peer recruiter cannot decide another recruiter day', async () => {
 
 test('the HR Admin decides for anyone and the decision is marked as an override', async () => {
   const ananya = await loginAs('ananya.rao');
-  const marked = await api(ananya).post('/api/attendance').send({ workDate: inDays(7), status: 'present', loginTime: '12:02' });
+  const marked = await api(ananya).post('/api/attendance').send(selfMark({ workDate: inDays(7), status: 'present', loginTime: '12:02' }));
   const meera = await loginAs('meera.krishnan');
   const res = await api(meera).post(`/api/attendance/${marked.body.item.id}/decision`).send({ decision: 'accepted' });
   assert.equal(res.status, 200);

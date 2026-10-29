@@ -16,7 +16,9 @@
     "seed": "node src/cli/seed.js",
     "create-admin": "node src/cli/create-admin.js",
     "db:create": "node src/cli/db-create.js",
-    "test": "node src/cli/migrate.js --reset && node src/cli/seed.js --force && node --test --test-concurrency=1 --test-force-exit \"test/*.test.js\""
+    "db:create:test": "node src/cli/db-create-test.js",
+    "db:purge": "node src/cli/purge-demo.js",
+    "test": "node src/cli/run-tests.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

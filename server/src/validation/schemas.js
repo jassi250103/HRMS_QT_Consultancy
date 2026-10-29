@@ -85,6 +85,7 @@ export const attendanceMark = z.object({
   latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
   longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   faceDescriptor: z.array(z.number()).length(128).optional(), // 128-dim facial descriptor array
+  overrideReason: z.string().trim().min(1, 'Select an override reason').max(240).optional(),
 });
 
 export const decision = z.object({

@@ -1,6 +1,7 @@
+# ------------------------------------------------ QT Consultancy HRMS — gitignore
+
 # Dependencies
 node_modules/
-server/node_modules/
 
 # Secrets — never commit real env files; set values in Railway Variables instead.
 # Only the .env.example template is tracked.
@@ -8,16 +9,37 @@ server/node_modules/
 .env.*
 !.env.example
 *.pem
+*.key
 server/certs/
 
-# Local runtime data & artifacts
+# Local runtime data & generated artifacts (never version controlled)
 server/uploads/
 server/backups/
 server/.tunnel/
 *.dump
+*.sql.gz
+pgdata/
+
+# Test & tooling artifacts
+coverage/
+.nyc_output/
+server/test-results/
+*.tmp
+tmp/
+
+# Logs
 *.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # OS / editor
 .DS_Store
 Thumbs.db
+desktop.ini
+.idea/
 .vscode/
+*.swp
+
+# Qoder local chat/agent artifacts
+.qoder/

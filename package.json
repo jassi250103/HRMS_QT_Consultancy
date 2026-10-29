@@ -1,17 +1,11 @@
 {
-  "name": "hrms",
+  "name": "qt-hrms",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "QT Consultancy HRMS — Express + PostgreSQL backend serving the static frontend from this directory.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@tensorflow/tfjs": "^4.22.0",
-    "@vladmandic/face-api": "^1.7.15"
+    "start": "node server/src/server.js",
+    "migrate": "node server/src/cli/migrate.js",
+    "create-admin": "node server/src/cli/create-admin.js"
   }
 }

@@ -87,6 +87,8 @@ window.App = window.App || {};
       decidedOn: U.dateKey(row.decidedAt),
       markedBy: row.markedBy || '',
       remarks: row.remarks || '',
+      manualOverride: !!row.manualOverride,
+      overrideReason: row.overrideReason || '',
     };
   }
 
@@ -987,7 +989,10 @@ window.App = window.App || {};
         latitude: input.latitude || null,
         longitude: input.longitude || null,
         faceDescriptor: input.faceDescriptor || undefined,
+        overrideReason: input.overrideReason || undefined,
+        remarks: input.remarks || undefined,
       };
+      if (input.staffId && input.staffId !== session.userId) body.staffId = input.staffId;
     } else {
       // Legacy signature for backward compatibility
       const status = input;

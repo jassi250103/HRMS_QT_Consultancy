@@ -105,7 +105,10 @@ async function seed() {
       }
     }
     await db.query(
-      `SELECT setval('recruit_code_seq', (SELECT coalesce(max((regexp_match(code, '^RCT-([0-9]+)$'))[1]::int), 1000) + 1 FROM recruit))`,
+      `SELECT setval('recruit_code_seq', (SELECT coalesce(greatest(
+          max((regexp_match(code, '^RCT-([0-9]+)$'))[1]::int),
+          max((regexp_match(sys_code, '^RCT-([0-9]+)$'))[1]::int)
+        ), 1000) + 1 FROM recruit))`,
     );
 
     const lateAfter = fixture.policy.lateAfter;

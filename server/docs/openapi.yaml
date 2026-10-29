@@ -291,9 +291,15 @@ paths:
       responses:
         '200': { description: Attendance days }
     post:
-      summary: Mark a day (self, or a report for a manager and the HR Admin). A late self-mark becomes pending.
+      summary: >-
+        Mark a day. Self-marks require face verification (all statuses) and the office
+        geofence (present). A manager or the HR Admin may mark for a report as a backup
+        when verification is unavailable; a Present mark for someone else requires an
+        overrideReason, which is stored and audited. A late self-mark becomes pending.
       responses:
-        '201': { description: Record saved }
+        '201': { description: 'Record saved (manualOverride + overrideReason when marked for a report)' }
+        '400': { description: Missing face capture, location, or the override reason for a Present mark for someone else }
+        '403': { description: Face not enrolled, face mismatch, or outside the office geofence }
   /api/attendance/pending:
     get:
       summary: Late marks waiting for a decision
