@@ -1194,8 +1194,12 @@ body.is-gated .app-shell { display: none; }
 .pw-toggle { position: absolute; top: 2px; right: 2px; width: 28px; height: 28px; }
 
 /* ============ Admin workspace bits ============ */
-.inline-add { display: flex; align-items: flex-start; gap: 8px; }
-.inline-add__field { flex: 1; min-width: 0; max-width: 420px; }
+/* The button is 32px like the control, so bottom-aligning it puts it level with
+   the input rather than with the label above it. */
+.inline-add { display: flex; align-items: flex-end; gap: 12px; }
+.inline-add__field { flex: 1; min-width: 0; max-width: 420px; position: relative; }
+/* Keep the validation line out of the row's height, or the button drops when it appears. */
+.inline-add .field__error { position: absolute; top: 100%; left: 0; }
 .inline-add .btn { height: 32px; flex: none; }
 .inline-add--inline { align-items: center; gap: 6px; margin-left: 10px; }
 .inline-add--inline .control { width: 92px; }
