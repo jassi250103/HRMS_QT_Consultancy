@@ -61,7 +61,7 @@ window.App = window.App || {};
     const enrolledDate = enrollmentStatus.enrolledAt ? U.fmtDate(enrollmentStatus.enrolledAt) : null;
     
     if (hasFace) {
-      return `<section class="card" style="margin-bottom:16px">
+      return `<section class="card">
         <div class="card__head">
           <div><h3 class="card__title">${uiIcon('user-check')} Face Enrollment Status</h3><p class="card__sub">Biometric attendance enabled</p></div>
           <span class="badge badge--active">${uiIcon('check')} Enrolled${enrolledDate ? ` on ${enrolledDate}` : ''}</span>
@@ -72,7 +72,7 @@ window.App = window.App || {};
         </div>
       </section>`;
     } else {
-      return `<section class="card" style="margin-bottom:16px;border-left:4px solid var(--warning)">
+      return `<section class="card" style="border-left:4px solid var(--warning)">
         <div class="card__head">
           <div><h3 class="card__title">${uiIcon('user-x')} Face Enrollment Required</h3><p class="card__sub">Mandatory for attendance marking</p></div>
           <a class="btn btn--primary" href="#/face-enrollment">${uiIcon('camera')} Enroll Now</a>

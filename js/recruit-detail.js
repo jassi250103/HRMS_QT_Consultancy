@@ -40,11 +40,11 @@ window.App = window.App || {};
       ${r.status === ACTIVE ? '' : item('Deactivated On', U.fmtDate(r.deactivatedOn || r.doj))}
     </div>`;
 
-    return `<div class="profile-cols" style="margin-bottom:20px">
+    return `<div class="profile-cols">
         <section class="card"><div class="card__head"><h3 class="section-title" style="margin:0">${icon('user')}Personal Information</h3></div><div class="card__body">${personal}</div></section>
         <section class="card"><div class="card__head"><h3 class="section-title" style="margin:0">${icon('mail')}Contact Information</h3></div><div class="card__body">${contact}</div></section>
       </div>
-      <section class="card" style="margin-bottom:20px"><div class="card__head"><h3 class="section-title" style="margin:0">${icon('briefcase')}Employment Information</h3></div><div class="card__body">${employment}</div></section>`;
+      <section class="card"><div class="card__head"><h3 class="section-title" style="margin:0">${icon('briefcase')}Employment Information</h3></div><div class="card__body">${employment}</div></section>`;
   }
 
   function docsCard(r) {
@@ -70,7 +70,7 @@ window.App = window.App || {};
     }).join('');
 
     const uploaded = A.data.docFields.filter((f) => r.docs[f.key]).length;
-    return `<section class="card" style="margin-bottom:20px">
+    return `<section class="card">
       <div class="card__head">
         <div><h3 class="card__title">Documents</h3><p class="card__sub">${uploaded} of 4 documents on file. Uploads are optional.</p></div>
         <span class="badge badge--neutral">${uploaded} of 4</span>
@@ -103,7 +103,7 @@ window.App = window.App || {};
 
   function hero(r, mode) {
     const isActive = r.status === ACTIVE;
-    return `<div class="detail-hero" style="margin-bottom:20px">
+    return `<div class="detail-hero">
       <div class="detail-hero__meta">
         <h2>${U.esc(r.name)}
           <span class="badge ${isActive ? 'badge--active' : 'badge--inactive'}"><i></i>${U.esc(r.status)}</span>
@@ -126,7 +126,7 @@ window.App = window.App || {};
 
   function deactivationAlert(r) {
     if (r.status === ACTIVE) return '';
-    return `<div class="alert alert--danger" style="margin-bottom:20px">
+    return `<div class="alert alert--danger">
       <div class="alert__body">
         <strong>Not Active · Reason: ${U.esc(r.reason || 'Not recorded')}</strong>
         <p>Remarks: ${U.esc(r.remarks || 'None')}</p>

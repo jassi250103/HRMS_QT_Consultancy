@@ -50,7 +50,7 @@ window.App = window.App || {};
   }
 
   function hero(st, editing) {
-    return `<div class="detail-hero" style="margin-bottom:20px">
+    return `<div class="detail-hero">
       <div class="detail-hero__meta">
         <h2>${U.esc(st.name)}
           <span class="badge ${st.active ? 'badge--active' : 'badge--inactive'}"><i></i>${st.active ? 'Active' : 'Inactive'}</span>
@@ -72,7 +72,7 @@ window.App = window.App || {};
   }
 
   function employmentCard(st) {
-    return `<section class="card" style="margin-bottom:20px">
+    return `<section class="card">
       <div class="card__head"><h3 class="section-title" style="margin:0">${icon('briefcase')} Employment</h3></div>
       <div class="card__body"><div class="detail-grid">
         ${item('Reports to', U.esc(st.managerName || '—'))}
@@ -111,7 +111,7 @@ window.App = window.App || {};
     const deleteControl = st.id === S.session.userId
       ? ''
       : `<button class="btn btn--sm btn--danger" type="button" data-staff-act="delete">${icon('trash')} Delete</button>`;
-    return `<section class="card" style="margin-bottom:20px">
+    return `<section class="card">
       <div class="card__head"><h3 class="section-title" style="margin:0">${icon('lock')} Portal account</h3><span>${accountBadge(st)}</span></div>
       <div class="card__body">
         <div class="detail-grid">
@@ -133,7 +133,7 @@ window.App = window.App || {};
     const absent = days.filter((d) => lower(d.status) === 'absent').length;
     const leave = days.filter((d) => lower(d.status) === 'leave').length;
     const leaves = (S.store.leaves || []).filter((l) => l.ownerId === st.id);
-    return `<section class="card" style="margin-bottom:20px">
+    return `<section class="card">
       <div class="card__head"><h3 class="section-title" style="margin:0">${icon('users')} Work summary</h3><p class="card__sub" style="margin:0">Window ${U.esc(U.monthLabel(new Date()))} · ${days.length} marked days</p></div>
       <div class="card__body"><div class="detail-grid">
         ${item('Monthly target', row ? String(row.target) : String(st.target || 0))}
@@ -186,7 +186,7 @@ window.App = window.App || {};
   }
 
   function docsCard(st, docs) {
-    return `<section class="card" id="staffDocsCard" style="margin-bottom:20px">${docsHTML(st, docs, false)}</section>`;
+    return `<section class="card" id="staffDocsCard">${docsHTML(st, docs, false)}</section>`;
   }
 
   function renderView(container, st, docs) {
@@ -289,7 +289,7 @@ window.App = window.App || {};
         <span>Edit</span>
       </nav>
       ${hero(st, true)}
-      <section class="card" style="margin-bottom:20px">
+      <section class="card">
         <div class="card__head"><h3 class="section-title" style="margin:0">${icon('briefcase')} Record</h3></div>
         <div class="card__body"><div class="form-grid">
           <div class="field" data-field="name"><label class="field__label" for="stfe-name">Name <span class="req">*</span></label><input class="control" id="stfe-name" type="text" value="${U.esc(st.name)}" data-autofocus /><span class="field__error"></span></div>
@@ -310,7 +310,7 @@ window.App = window.App || {};
           <div class="field field--full"><label class="field__label" for="stfe-teamNote">Team note</label><input class="control" id="stfe-teamNote" type="text" maxlength="240" value="${U.esc(st.teamNote || '')}" /></div>
         </div></div>
       </section>
-      <section class="card" id="staffDocsCard" style="margin-bottom:20px">${docsHTML(st, docs, true)}</section>
+      <section class="card" id="staffDocsCard">${docsHTML(st, docs, true)}</section>
       <div class="form-foot">
         <p class="form-foot__note">Documents save on pick, not with the Save button.</p>
         <div class="btn-row">

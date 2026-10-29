@@ -80,7 +80,7 @@ window.App = window.App || {};
       employment: { title: 'Employment Information', icon: 'briefcase' },
     }[section];
     const fields = spec.filter((f) => f.section === section);
-    return `<section class="card" id="${p}-${section}" style="margin-bottom:20px">
+    return `<section class="card" id="${p}-${section}">
       <div class="card__head"><h3 class="section-title" style="margin:0">${icon(meta.icon)}${meta.title}</h3></div>
       <div class="card__body"><div class="form-grid">${fields.map((f) => fieldHTML(f, record, p, autoId)).join('')}</div></div>
     </section>`;
@@ -117,7 +117,7 @@ window.App = window.App || {};
   }
 
   function docsSectionHTML(p, record) {
-    return `<section class="card" id="${p}-documents" style="margin-bottom:20px">
+    return `<section class="card" id="${p}-documents">
       <div class="card__head">
         <div><h3 class="card__title">Documents</h3><p class="card__sub">Aadhaar, PAN, Resume and Passbook uploads are optional.</p></div>
         <span class="badge badge--neutral">Not mandatory</span>
@@ -305,7 +305,7 @@ window.App = window.App || {};
       </div>
 
       <div id="recruitFormHost">
-        ${[0, 1, 2].map(() => '<section class="card" style="margin-bottom:20px"><div class="card__body">'
+        ${[0, 1, 2].map(() => '<section class="card"><div class="card__body">'
           + [0, 1, 2, 3].map(() => '<span class="skeleton" style="display:block;height:13px;margin-bottom:12px"></span>').join('')
           + '</div></section>').join('')}
       </div>

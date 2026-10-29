@@ -127,6 +127,15 @@
 .stack > .stat-grid,
 .grid > .stat-grid { margin-bottom: 0; }
 
+/* Most pages mount their blocks as plain siblings, which have no rhythm of their
+   own, so touching blocks sat flush. Adjacent margins collapse, so a block that
+   already carries 14px from the rule above still measures 14px. */
+.card:not(:first-child),
+.alert:not(:first-child),
+.stat-grid:not(:first-child) { margin-top: 14px; }
+
+:is(.stack, .grid, .dash-split, .profile-cols) > :is(.card, .alert, .stat-grid):not(:first-child) { margin-top: 0; }
+
 .stat {
   position: relative;
   overflow: hidden;
