@@ -117,10 +117,15 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+  margin-bottom: 14px;
   background: none;
   border: none;
   border-radius: 0;
 }
+
+/* Inside a gap-driven container the margin would stack on top of the gap. */
+.stack > .stat-grid,
+.grid > .stat-grid { margin-bottom: 0; }
 
 .stat {
   position: relative;
