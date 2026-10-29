@@ -9,6 +9,9 @@ types.setTypeParser(1082, (value) => value);
 
 export const pool = new Pool({
   connectionString: config.databaseUrl,
+  /* Supabase endpoints publish AAAA records; hosts without an IPv6 route (Railway containers)
+     get ENETUNREACH instead of falling back, so pin the family to IPv4. */
+  family: 4,
   max: 10,
   idleTimeoutMillis: 30_000,
 });
