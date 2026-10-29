@@ -50,6 +50,19 @@ window.App = window.App || {};
     document.title = `${title} · QT Consultancy HRMS`;
   }
 
+  /* The sticky topbar already carries the page name, so a page that repeats it in its own
+     .page-head reads as the same heading twice. Pages rebuild that block once their data
+     arrives, hence watching the view rather than checking once per route. */
+  new MutationObserver(() => {
+    const title = U.by('pageTitle').textContent.trim();
+    U.by('view').querySelectorAll('.page-head__text h2').forEach((heading) => {
+      if (heading.textContent.trim() !== title) return;
+      const block = heading.parentElement;
+      heading.remove();
+      if (!block.children.length) block.remove();
+    });
+  }).observe(U.by('view'), { childList: true, subtree: true });
+
   function notFound(hash) {
     return `<div class="card"><div class="card__body"><div class="empty">
       <span class="empty__icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>

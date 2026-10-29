@@ -102,26 +102,18 @@ window.App = window.App || {};
     const enrolledDate = enrolled ? U.fmtDate(enrollmentStatus.enrolledAt) : 'Not enrolled';
 
     return `<div class="form-page">
-      <nav class="breadcrumb">
-        <a href="#/dashboard">Dashboard</a>
-        <svg viewBox="0 0 24 24">${A.ui.icons.chev}</svg>
-        <span>Face Enrollment</span>
-      </nav>
-
       <div class="page-head">
         <div class="page-head__text">
-          <h2>Face Enrollment</h2>
           <p>Register your face for biometric attendance verification. Your face is converted into a numeric face signature (not a photo) and stored securely on the server.</p>
         </div>
       </div>
 
-      <div class="stat-grid">
-        <article class="stat" style="--accent:${enrolled ? 'var(--success)' : 'var(--warning)'}">
-          <div class="stat__top">
-            <span class="stat__label">Enrollment Status</span>
-            <span class="stat__icon">${icon(enrolled ? 'check' : 'clock')}</span>
-          </div>
-          <p class="stat__value">${enrolled ? 'Enrolled' : 'Not Enrolled'}</p>
+      <div class="stat-grid stat-grid--one">
+        <article class="stat stat--bar" style="--accent:${enrolled ? 'var(--success)' : 'var(--warning)'}">
+          <span class="stat__icon">${icon(enrolled ? 'check' : 'clock')}</span>
+          <span class="stat__label">Enrollment status</span>
+          <span class="stat__sep"></span>
+          <p class="stat__value">${enrolled ? 'Enrolled' : 'Not enrolled'}</p>
           <p class="stat__meta">${enrolledDate}</p>
         </article>
       </div>
